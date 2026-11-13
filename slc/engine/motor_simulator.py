@@ -32,4 +32,25 @@ class MotorSimulator:
         voltage_command = np.clip(voltage_command, self.last_voltage - max_delta, self.last_voltage + max_delta)
         self.last_voltage = voltage_command
         self.voltage_buffer.append(voltage_command)
-        v_delayed = self.voltage_buffer.pop
+        v_delayed = self.voltage_buffer.pop(0)  # Get the oldest voltage in the buffer
+
+        # Runge-Kutta 4th order integration
+        y = self.state
+        dt = self.dt
+        k1 = self.derivatives(y, v_delayed, tau)
+        k2 = self.derivatives(y + 0.5 * dt * k1, v_delayed, tau)
+        k3 = self.derivatives(y + 0.5 * dt * k2, v_delayed, tau)
+        k4 = self.derivatives(y + dt * k3, v_delayed, tau)
+        self.state = y + (dt / 6.0) * (k1 + 2*k2 + 2*k3 + k4)
+
+        current, omega = self.state
+        rpm = omega * 60 / (2.0 * np.pi)
+
+        return {
+            "voltage_command": voltage_command,
+            "voltage_delayed": v_delayed,
+            "current": current,
+            "angular_velocity": omega,
+            "rpm": rpm,
+            "torque": tau
+        }

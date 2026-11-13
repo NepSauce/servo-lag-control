@@ -21,5 +21,15 @@ class MotorSimulator:
         i, omega = state
         di_dt = (voltage - self.motor_params.resistance * i - self.motor_params.back_emf_constant * omega) / self.motor_params.inductance
         domega_dt = (self.motor_params.torque_constant * i - self.motor_params.damping * omega - tau) / self.motor_params.inertia
-        
+
         return np.array([di_dt, domega_dt])
+
+    def step(self, voltage_command: float, tau: float = 0.0) -> Dict[str, float]:
+        # Voltage saturation clamping, ensure that the voltage command is within the allowed range
+        voltage_command = np.clip(voltage_command, -self.motor_params.max_voltage, self.motor_params.max_voltage)
+        # Actuator slew rate limiting by constraining the change in voltage
+        max_delta = self.motor_params.slew_rate * self.dt
+        voltage_command = np.clip(voltage_command, self.last_voltage - max_delta, self.last_voltage + max_delta)
+        self.last_voltage = voltage_command
+        self.voltage_buffer.append(voltage_command)
+        v_delayed = self.voltage_buffer.pop

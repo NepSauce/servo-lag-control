@@ -16,3 +16,10 @@ class MotorSimulator:
         self.state = np.array(initial_state, dtype=float)
         self.voltage_buffer = [0.0] * len(self.voltage_buffer)
         self.last_voltage = 0.0
+
+    def derivatives(self, state: np.ndarray, voltage: float, tau: float):
+        i, omega = state
+        di_dt = (voltage - self.motor_params.resistance * i - self.motor_params.back_emf_constant * omega) / self.motor_params.inductance
+        domega_dt = (self.motor_params.torque_constant * i - self.motor_params.damping * omega - tau) / self.motor_params.inertia
+        
+        return np.array([di_dt, domega_dt])
